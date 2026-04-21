@@ -21,9 +21,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/books", tags=["books"])
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
+
 
 def _save_upload(file: UploadFile, book_id: int) -> Path:
     """Save uploaded PDF to UPLOAD_DIR/<book_id>_<filename>."""
@@ -33,9 +32,7 @@ def _save_upload(file: UploadFile, book_id: int) -> Path:
     return dest
 
 
-# ---------------------------------------------------------------------------
 # POST /books — upload + full pipeline (blocking)
-# ---------------------------------------------------------------------------
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def upload_book(
@@ -63,6 +60,7 @@ def upload_book(
     # 1. Create Book record with placeholder path so we have an id
     book = Book(
         title=Path(file.filename).stem,
+        author="",
         file_path="",
         status=BookStatus.processing,
     )
@@ -104,6 +102,8 @@ def upload_book(
         for chapter, chapter_data in zip(chapters, chapter_data_list):
             chunks = chunk_chapter(
                 text=chapter_data.text,
+                chapter_id=chapter.id,
+                book_id=book.id,
                 start_page=chapter_data.start_page,
             )
             if not chunks:
@@ -147,10 +147,7 @@ def upload_book(
 
     return book
 
-
-# ---------------------------------------------------------------------------
 # GET /books — list all books
-# ---------------------------------------------------------------------------
 
 @router.get("/")
 def list_books(session: Session = Depends(get_session)) -> list[Book]:
@@ -158,9 +155,7 @@ def list_books(session: Session = Depends(get_session)) -> list[Book]:
     return session.exec(select(Book).order_by(Book.uploaded_at.desc())).all()
 
 
-# ---------------------------------------------------------------------------
 # GET /books/{book_id} — get single book
-# ---------------------------------------------------------------------------
 
 @router.get("/{book_id}")
 def get_book(book_id: int, session: Session = Depends(get_session)) -> Book:
@@ -171,9 +166,7 @@ def get_book(book_id: int, session: Session = Depends(get_session)) -> Book:
     return book
 
 
-# ---------------------------------------------------------------------------
 # DELETE /books/{book_id} — delete book + Qdrant chunks
-# ---------------------------------------------------------------------------
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_book(book_id: int, session: Session = Depends(get_session)) -> None:

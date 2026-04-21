@@ -27,9 +27,9 @@ app.add_middleware(
 )
 
 # --- Routers (uncomment as built) ---
-# from routers import books, chapters, topics, study, quiz, progress
-# app.include_router(books.router, prefix=settings.API_PREFIX)
-# app.include_router(chapters.router, prefix=settings.API_PREFIX)
+from routers import books, chapters # , topics, study, quiz, progress
+app.include_router(books.router, prefix=settings.API_PREFIX)
+app.include_router(chapters.router, prefix=settings.API_PREFIX)
 # app.include_router(topics.router, prefix=settings.API_PREFIX)
 # app.include_router(study.router, prefix=settings.API_PREFIX)
 # app.include_router(quiz.router, prefix=settings.API_PREFIX)
