@@ -21,7 +21,7 @@ class Book(SQLModel, table=True):
     uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: BookStatus = Field(default=BookStatus.pending)
 
-    chapters: List["Chapter"] = Relationship(back_populates="book")
+    chapters: List["Chapter"] = Relationship(back_populates="book",sa_relationship_kwargs = {"cascade": "all, delete-orphan"},)
 
 class Chapter(SQLModel, table=True):
     """Represents a chapter of a book."""
@@ -51,7 +51,7 @@ class Topic(SQLModel, table=True):
     outgoing_edges: List["ConceptEdge"] = Relationship(back_populates="source_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.source_topic_id]"})
     incoming_edges: List["ConceptEdge"] = Relationship(back_populates="target_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.target_topic_id]"})
 
-class question_type(str, Enum):
+class QuizQuestionType(str, Enum):
     """Enumeration for quiz question types."""
     multiple_choice = "multiple_choice"
     true_false = "true_false"
@@ -63,7 +63,7 @@ class QuizQuestion(SQLModel, table=True):
     topic_id: int = Field(foreign_key='topic.id')
     order_index: int
     question: str
-    question_type: question_type
+    question_type: QuizQuestionType
     options: Optional[List[str]] = Field(default=None, sa_column=Column(JSON)) # only for multiple choice
     correct_answer: Optional[str] = Field(default=None) # for multiple choice and true/false, store the correct option; for short answer, store the expected answer
     explanation: Optional[str] = Field(default=None) # explanation for the correct answer
