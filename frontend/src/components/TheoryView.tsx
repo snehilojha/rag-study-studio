@@ -1,0 +1,2 @@
+// Theory view component.
+
