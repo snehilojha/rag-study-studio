@@ -110,7 +110,7 @@ def upsert_chunks(
                 id=str(uuid.uuid4()),
                 vector={
                     "": vector,          # default dense vector (unnamed = primary)
-                    "bm25": {},          # Qdrant fills sparse from payload text via IDF modifier
+                    "bm25": qdrant_models.SparseVector(indices=[], values=[]),         # Qdrant fills sparse from payload text via IDF modifier
                 },
                 payload={
                     "text": text,

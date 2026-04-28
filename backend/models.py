@@ -69,7 +69,7 @@ class QuizQuestion(SQLModel, table=True):
     explanation: Optional[str] = Field(default=None) # explanation for the correct answer
 
     topic: Optional[Topic] = Relationship(back_populates='quiz_questions')
-    attempts: List["QuizAttempt"] = Relationship(back_populates="quiz_question")
+    attempts: List["QuizAttempt"] = Relationship(back_populates="question")
 
 class QuizAttempt(SQLModel, table=True):
     """Represents a user's attempt at a quiz question."""

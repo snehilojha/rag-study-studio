@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from config import settings
 from database import get_session
 from models import Book, BookStatus, Chapter
-from services.pdf_extractor import extract_chapters
+from services.pdf_extractor import extract_chapters, extract_text_for_pages
 from services.chunker import chunk_chapter
 from services.embedder import embed_texts, unload_model
 from services.vector_store import create_collection, upsert_chunks, delete_book_chunks
@@ -100,8 +100,13 @@ def upload_book(
         create_collection()  # no-op if already exists
 
         for chapter, chapter_data in zip(chapters, chapter_data_list):
+            chapter_text = extract_text_for_pages(
+                str(file_path),
+                chapter_data.start_page,
+                chapter_data.end_page,
+            )
             chunks = chunk_chapter(
-                text=chapter_data.text,
+                text=chapter_text,
                 chapter_id=chapter.id,
                 book_id=book.id,
                 start_page=chapter_data.start_page,
