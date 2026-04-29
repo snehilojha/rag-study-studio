@@ -12,6 +12,7 @@ from config import settings
 from database import get_session
 from models import Book, BookStatus, Chapter
 from services.pdf_extractor import extract_chapters, extract_text_for_pages
+from services.topic_service import extract_and_save_topics
 from services.chunker import chunk_chapter
 from services.embedder import embed_texts, unload_model
 from services.vector_store import create_collection, upsert_chunks, delete_book_chunks
@@ -44,10 +45,11 @@ def upload_book(
       1. Save PDF to disk
       2. Create Book record (status=processing)
       3. Extract chapters -> Chapter records
-      4. Chunk each chapter
-      5. Embed chunks
-      6. Upsert to Qdrant
-      7. Mark Book status=ready
+      4. Extract topics -> Topic records
+      5. Chunk each chapter
+      6. Embed chunks
+      7. Upsert to Qdrant
+      8. Mark Book status=ready
 
     Blocking. Returns the Book record when done.
     """
@@ -96,15 +98,21 @@ def upload_book(
         for chapter in chapters:
             session.refresh(chapter)
 
-        # 4-6. Chunk, embed, upsert per chapter
+        # 4. Extract topics
+        chapter_texts = {}
+        for chapter in chapters:
+            chapter_text = extract_text_for_pages(
+            str(file_path),
+            chapter.start_page,
+            chapter.end_page,
+            )
+            chapter_texts[chapter.id] = chapter_text
+            extract_and_save_topics(chapter, session, chapter_text)
+        # 5-7. Chunk, embed, upsert per chapter
         create_collection()  # no-op if already exists
 
         for chapter, chapter_data in zip(chapters, chapter_data_list):
-            chapter_text = extract_text_for_pages(
-                str(file_path),
-                chapter_data.start_page,
-                chapter_data.end_page,
-            )
+            chapter_text = chapter_texts[chapter.id]
             chunks = chunk_chapter(
                 text=chapter_text,
                 chapter_id=chapter.id,
@@ -129,7 +137,7 @@ def upload_book(
                 chunk_indices=chunk_indices,
             )
 
-        # 7. Mark ready
+        # 8. Mark ready
         book.status = BookStatus.ready
         session.add(book)
         session.commit()

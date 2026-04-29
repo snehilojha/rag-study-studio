@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # Paths
     UPLOAD_DIR: Path = BASE_DIR / "data" / "uploads"
     CACHE_DIR: Path = BASE_DIR / "data" / "cache"
+    CACHE_EXPIRATION: int = 3600
 
     # Database
     SQLITE_URL: str = f"sqlite:///{BASE_DIR}/data/db.sqlite"
