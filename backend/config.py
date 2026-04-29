@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str
 
     # Embeddings
-    EMBEDDING_MODEL: str = "google/embeddinggemma-300m" # or "Alibaba-NLP/gte-large-en-v1.5"
+    EMBEDDING_MODEL: str = "snowflake/snowflake-arctic-embed-l"
 
     # Chunking
     CHUNK_SIZE: int = 500
