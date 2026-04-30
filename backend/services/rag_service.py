@@ -165,12 +165,7 @@ def get_connections(topic_id: int, session: Session) -> list:
 
     topic, book_id = _get_topic_with_book(topic_id, session)
 
-    # Retrieve chunks for this topic to find semantically similar topics
-    chunks = _retrieve_chunks(topic, book_id)
-
-    # Build candidate connections: topics appearing in retrieved chunks
-    # Use chunk metadata (chapter_id) to find related topic titles
-    candidate_titles = _extract_candidate_topics(chunks, topic, session)
+    candidate_titles = _extract_candidate_topics(topic, session)
 
     if not candidate_titles:
         logger.info("No candidates found for topic %d — returning empty connections", topic_id)
@@ -206,7 +201,6 @@ def get_connections(topic_id: int, session: Session) -> list:
 # ---------------------------------------------------------------------------
 
 def _extract_candidate_topics(
-    chunks: list[str],
     current_topic: Topic,
     session: Session,
 ) -> list[str]:
@@ -214,10 +208,8 @@ def _extract_candidate_topics(
     Find other topic titles from the same book that are candidates
     for conceptual connections with the current topic.
 
-    Strategy: fetch all topics from the same book, exclude self,
-    return their titles as candidates for LLM validation.
-    Keeps it simple — LLM does the heavy lifting of deciding
-    which connections are real.
+    Fetches all topics from the same book, excludes the current topic,
+    and returns their titles as candidates for LLM validation.
     """
     from sqlmodel import select
     from models import Chapter
@@ -226,7 +218,6 @@ def _extract_candidate_topics(
     if not chapter:
         return []
 
-    # Get all chapters for this book
     book_chapters = session.exec(
         select(Chapter).where(Chapter.book_id == chapter.book_id)
     ).all()

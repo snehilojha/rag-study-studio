@@ -27,11 +27,12 @@ app.add_middleware(
 )
 
 # --- Routers (uncomment as built) ---
-from routers import books, chapters, topics, study  # , quiz, progress
+from routers import books, chapters, topics, study, qa  # , quiz, progress
 app.include_router(books.router, prefix=settings.API_PREFIX)
 app.include_router(chapters.router, prefix=settings.API_PREFIX)
 app.include_router(topics.router, prefix=settings.API_PREFIX)
 app.include_router(study.router, prefix=settings.API_PREFIX)
+app.include_router(qa.router, prefix=settings.API_PREFIX)
 # app.include_router(quiz.router, prefix=settings.API_PREFIX)
 # app.include_router(progress.router, prefix=settings.API_PREFIX)
 
