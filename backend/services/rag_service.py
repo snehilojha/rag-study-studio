@@ -14,6 +14,7 @@ from services.embedder import embed_texts
 from prompts.theory import THEORY_SYSTEM, theory_user
 from prompts.practical import PRACTICAL_SYSTEM, practical_user
 from prompts.connections import CONNECTIONS_SYSTEM, connections_user
+from services.reranker import rerank
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,8 @@ def _retrieve_chunks(topic: Topic, book_id: int) -> list[str]:
         book_id=book_id,
         top_k=TOP_K,
     )
-    return [r["text"] for r in results]
-
-
+    return rerank(query=topic.title, chunks=[r["text"] for r in results])
+    
 def _get_topic_with_book(topic_id: int, session: Session) -> tuple[Topic, int]:
     """Fetch topic and resolve its book_id via chapter relationship."""
     topic = session.get(Topic, topic_id)

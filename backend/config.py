@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     # RAG
-    RAG_TOP_K: int = 6
+    RAG_TOP_K: int = 3
 
     # Upload
     MAX_UPLOAD_MB: int = 100
