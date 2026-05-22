@@ -1,5 +1,6 @@
 """PDF extraction helpers."""
 
+import re
 from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
@@ -7,6 +8,8 @@ import fitz # PyMuPDF
 import pdfplumber
 
 from config import settings
+
+_CHAPTER_RE = re.compile(r'^chapter\s+\d+', re.IGNORECASE)
 
 
 @dataclass
@@ -25,10 +28,10 @@ def extract_chapters(file_path: str) -> list[ChapterData]:
         doc = fitz.open(file_path)
         toc = doc.get_toc() # returns [[level, title, page], ...]
 
-        if toc:
-            return _chapters_from_toc(toc, doc.page_count)
-        else:
-            return _chapters_from_heuristics(doc)
+        chapters = _chapters_from_toc(toc, doc.page_count) if toc else []
+        if len(chapters) >= 3:
+            return chapters
+        return _chapters_from_heuristics(doc)
         
     except:
         # PyMuPDF failed,fall back to pdfplumber
@@ -75,8 +78,8 @@ def _chapters_from_toc(toc:list, total_pages: int) -> list[ChapterData]:
 
 def _chapters_from_heuristics(doc: fitz.Document) -> list[ChapterData]:
     """
-    Detect chapters by checking first line of each page.
-    Looks for short lines starting with 'chapter'.
+    Detect chapters by scanning every line of every page for 'Chapter N' headings.
+    Scanning all lines handles PDFs with page headers/footers before the heading.
     """
     chapter_pages = []
 
@@ -84,9 +87,11 @@ def _chapters_from_heuristics(doc: fitz.Document) -> list[ChapterData]:
         text = doc[page_num].get_text().strip()
         if not text:
             continue
-        first_line = text.split("\n")[0].strip()
-        if first_line.lower().startswith("chapter") and len(first_line) < 60:
-            chapter_pages.append((page_num + 1, first_line))  # 1-indexed
+        for line in text.split("\n"):
+            line = line.strip()
+            if _CHAPTER_RE.match(line) and len(line) < 80:
+                chapter_pages.append((page_num + 1, line))
+                break  # one chapter heading per page is enough
 
     chapters = []
     for i, (start_page, title) in enumerate(chapter_pages):
@@ -111,10 +116,11 @@ def _extract_chapters_pdfplumber(file_path: str) -> list[ChapterData]:
         total_pages = len(pdf.pages)
         for i, page in enumerate(pdf.pages):
             text = page.extract_text() or ""
-            first_line = text.strip().split("\n")[0] if text.strip() else ""
-
-            if first_line.lower().startswith("chapter") and len(first_line) < 60:
-                chapter_pages.append((i + 1, first_line))  # 1-indexed
+            for line in (text.strip().split("\n") if text.strip() else []):
+                line = line.strip()
+                if _CHAPTER_RE.match(line) and len(line) < 80:
+                    chapter_pages.append((i + 1, line))
+                    break
 
     chapters = []
     for i, (start_page, title) in enumerate(chapter_pages):

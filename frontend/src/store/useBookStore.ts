@@ -1,14 +1,15 @@
 import { create } from "zustand";
 
 import * as api from "../api/client";
-import type { Book, Chapter } from "../types";
+import type { Book, Chapter, Topic, Connection } from "../types";
 
 interface BookStore {
   // State
   books: Book[];
   selectedBook: Book | null;
   chapters: Chapter[];
-  selectedChapter: Chapter | null;
+  allTopics: Topic[];
+  connections: Connection[];
   isLoading: boolean;
   error: string | null;
 
@@ -17,14 +18,16 @@ interface BookStore {
   uploadBook: (file: File) => Promise<void>;
   deleteBook: (bookId: number) => Promise<void>;
   selectBook: (book: Book) => Promise<void>;
-  selectChapter: (chapter: Chapter) => void;
+  fetchAllTopics: (bookId: number) => Promise<void>;
+  fetchBookConnections: (bookId: number) => Promise<void>;
 }
 
 export const useBookStore = create<BookStore>((set, get) => ({
   books: [],
   selectedBook: null,
   chapters: [],
-  selectedChapter: null,
+  allTopics: [],
+  connections: [],
   isLoading: false,
   error: null,
 
@@ -59,10 +62,10 @@ export const useBookStore = create<BookStore>((set, get) => ({
       const { selectedBook } = get();
       set((state) => ({
         books: state.books.filter((b) => b.id !== bookId),
-        // clear selection if the deleted book was selected
         selectedBook: selectedBook?.id === bookId ? null : selectedBook,
         chapters: selectedBook?.id === bookId ? [] : state.chapters,
-        selectedChapter: selectedBook?.id === bookId ? null : state.selectedChapter,
+        allTopics: selectedBook?.id === bookId ? [] : state.allTopics,
+        connections: selectedBook?.id === bookId ? [] : state.connections,
       }));
     } catch (e) {
       set({ error: (e as Error).message });
@@ -72,7 +75,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   },
 
   selectBook: async (book) => {
-    set({ selectedBook: book, chapters: [], selectedChapter: null, error: null, isLoading: true });
+    set({ selectedBook: book, chapters: [], allTopics: [], connections: [], error: null, isLoading: true });
     try {
       const chapters = await api.getChapters(book.id);
       set({ chapters });
@@ -83,7 +86,21 @@ export const useBookStore = create<BookStore>((set, get) => ({
     }
   },
 
-  selectChapter: (chapter) => {
-    set({ selectedChapter: chapter });
+  fetchAllTopics: async (bookId) => {
+    try {
+      const allTopics = await api.getAllTopicsForBook(bookId);
+      set({ allTopics });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  fetchBookConnections: async (bookId) => {
+    try {
+      const connections = await api.getBookConnections(bookId);
+      set({ connections });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
   },
 }));

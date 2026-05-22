@@ -1,2 +1,0 @@
-// Global UI store.
-

@@ -6,7 +6,7 @@ import re
 
 from sqlmodel import Session
 
-from models import Topic
+from models import Chapter, ConceptEdge, EdgeType, Topic
 from services.llm_client import get_llm_client
 from services.cache import get_cache, set_cache
 from services.vector_store import search_chunks
@@ -146,8 +146,8 @@ def get_connections(topic_id: int, session: Session) -> list:
     """
     Retrieve concept graph connections for a topic.
 
-    Flow: cache check → fetch sibling topics from same book → build
-    candidates via embedding similarity → LLM validation → cache store.
+    Flow: cache check → fetch sibling topics from same book → LLM validation
+    → resolve titles to IDs → persist to ConceptEdge table → cache store.
 
     Args:
         topic_id: DB id of the topic.
@@ -155,7 +155,8 @@ def get_connections(topic_id: int, session: Session) -> list:
 
     Returns:
         List of validated connection dicts with keys:
-        source_topic, target_topic, relationship, valid, reason.
+        source_topic, source_topic_id, target_topic, target_topic_id,
+        relationship, valid, reason.
     """
     key = _cache_key("connections", topic_id)
     cached = get_cache(key)
@@ -165,22 +166,24 @@ def get_connections(topic_id: int, session: Session) -> list:
 
     topic, book_id = _get_topic_with_book(topic_id, session)
 
-    candidate_titles = _extract_candidate_topics(topic, session)
+    candidate_topics = _extract_candidate_topics(topic, session)
 
-    if not candidate_titles:
+    if not candidate_topics:
         logger.info("No candidates found for topic %d — returning empty connections", topic_id)
         return []
 
+    title_to_id: dict[str, int] = {t.title: t.id for t in candidate_topics}
+
     candidates = [
-        {"source_topic": topic.title, "target_topic": title}
-        for title in candidate_titles
+        {"source_topic": topic.title, "target_topic": t.title}
+        for t in candidate_topics
     ]
 
     llm = get_llm_client()
     raw = llm.generate(
         system=CONNECTIONS_SYSTEM,
         user=connections_user(candidates),
-        temperature=0.2,  # low — classification task, not creative
+        temperature=0.2,
     )
 
     try:
@@ -189,11 +192,57 @@ def get_connections(topic_id: int, session: Session) -> list:
         logger.error("Failed to parse connections response for topic %d: %s", topic_id, e)
         raise RuntimeError(f"LLM returned invalid JSON for connections: {e}") from e
 
-    # Filter to only valid connections
-    valid = [c for c in result if c.get("valid")]
+    # Resolve titles to IDs, persist to DB, build enriched output
+    from sqlmodel import select as sa_select
 
-    set_cache(key, json.dumps(valid))
-    return valid
+    enriched: list[dict] = []
+    for conn in result:
+        if not conn.get("valid"):
+            continue
+
+        tgt_title = conn.get("target_topic", "")
+        tgt_id = title_to_id.get(tgt_title)
+        if tgt_id is None:
+            logger.warning("Could not resolve target topic '%s' to an ID — skipping", tgt_title)
+            continue
+
+        rel = conn.get("relationship", "")
+        try:
+            edge_type = EdgeType(rel)
+        except ValueError:
+            logger.warning("Unknown relationship type '%s' — skipping", rel)
+            continue
+
+        # Persist edge if it doesn't already exist (check both directions)
+        existing = session.exec(
+            sa_select(ConceptEdge).where(
+                (
+                    (ConceptEdge.source_topic_id == topic.id) &
+                    (ConceptEdge.target_topic_id == tgt_id)
+                ) | (
+                    (ConceptEdge.source_topic_id == tgt_id) &
+                    (ConceptEdge.target_topic_id == topic.id)
+                )
+            )
+        ).first()
+
+        if not existing:
+            session.add(ConceptEdge(
+                source_topic_id=topic.id,
+                target_topic_id=tgt_id,
+                edge_type=edge_type,
+            ))
+
+        enriched.append({
+            **conn,
+            "source_topic_id": topic.id,
+            "target_topic_id": tgt_id,
+        })
+
+    session.commit()
+
+    set_cache(key, json.dumps(enriched))
+    return enriched
 
 
 # ---------------------------------------------------------------------------
@@ -203,16 +252,13 @@ def get_connections(topic_id: int, session: Session) -> list:
 def _extract_candidate_topics(
     current_topic: Topic,
     session: Session,
-) -> list[str]:
+) -> list[Topic]:
     """
-    Find other topic titles from the same book that are candidates
-    for conceptual connections with the current topic.
-
-    Fetches all topics from the same book, excludes the current topic,
-    and returns their titles as candidates for LLM validation.
+    Find other topics from the same book that are candidates for conceptual
+    connections with the current topic. Returns Topic objects so callers have
+    both titles and IDs available.
     """
     from sqlmodel import select
-    from models import Chapter
 
     chapter = current_topic.chapter
     if not chapter:
@@ -222,10 +268,10 @@ def _extract_candidate_topics(
         select(Chapter).where(Chapter.book_id == chapter.book_id)
     ).all()
 
-    candidate_titles = []
+    candidates: list[Topic] = []
     for ch in book_chapters:
         for t in ch.topics:
             if t.id != current_topic.id:
-                candidate_titles.append(t.title)
+                candidates.append(t)
 
-    return candidate_titles
+    return candidates

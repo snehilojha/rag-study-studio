@@ -1,0 +1,25 @@
+# Web framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database
+sqlmodel
+pydantic-settings
+
+# Vector store
+qdrant-client
+
+# Embeddings + reranking
+sentence-transformers
+
+# PDF extraction
+pymupdf
+pdfplumber
+
+# Caching
+diskcache
+
+# LLM providers
+anthropic
+openai

@@ -1,5 +1,3 @@
-// Home page.
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -17,35 +15,38 @@ export function Home() {
   }, [fetchBooks]);
 
   function handleSelect(book: Book) {
-    navigate(`/books/${book.id}/chapters`);
+    navigate(`/books/${book.id}`);
   }
 
   return (
-    <div>
-      <h1>My Books</h1>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="max-w-2xl mx-auto px-6 py-12">
+        <h1 className="text-xl font-semibold text-[#111] mb-8">Your Library</h1>
 
-      <UploadZone onFile={uploadBook} disabled={isLoading} />
+        <UploadZone onFile={uploadBook} disabled={isLoading} />
 
-      {error && <p>Error: {error}</p>}
+        {error && (
+          <p className="mt-4 text-sm text-[#111]">Error: {error}</p>
+        )}
 
-      {isLoading && <p>Loading...</p>}
+        {!isLoading && books.length === 0 && !error && (
+          <p className="mt-8 text-sm text-[#888]">No books yet. Upload a PDF to get started.</p>
+        )}
 
-      {!isLoading && books.length === 0 && (
-        <p>No books yet. Upload a PDF to get started.</p>
-      )}
-
-      <ul>
-        {books.map((book) => (
-          <li key={book.id}>
-            <BookCard
-              book={book}
-              onSelect={handleSelect}
-              onDelete={deleteBook}
-              disabled={isLoading}
-            />
-          </li>
-        ))}
-      </ul>
+        {books.length > 0 && (
+          <div className="mt-8 border border-[#E4E4E4] rounded overflow-hidden">
+            {books.map((book) => (
+              <BookCard
+                key={book.id}
+                book={book}
+                onSelect={handleSelect}
+                onDelete={deleteBook}
+                disabled={isLoading}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

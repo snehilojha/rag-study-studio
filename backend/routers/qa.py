@@ -16,10 +16,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/qa", tags=["qa"])
 
-
-# ---------------------------------------------------------------------------
 # Request / response schemas
-# ---------------------------------------------------------------------------
+
 
 class QuestionRequest(BaseModel):
     """Request body for asking a question."""
@@ -42,9 +40,8 @@ class AnswerResponse(BaseModel):
     citations: list[Citation]
 
 
-# ---------------------------------------------------------------------------
 # Routes
-# ---------------------------------------------------------------------------
+
 
 @router.post("/ask", response_model=AnswerResponse)
 def ask(

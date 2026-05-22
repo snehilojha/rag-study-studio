@@ -44,9 +44,16 @@ class OpenAIProvider(LLMClient):
                 messages=messages,
                 temperature=temperature,
             )
-            content = response.choices[0].message.content
+            choice = response.choices[0]
+            content = choice.message.content
             if content is None:
-                raise RuntimeError("OpenAI returned null content in the response")
+                logger.error(
+                    "OpenAI null content | finish_reason=%s | model=%s | usage=%s",
+                    choice.finish_reason,
+                    response.model,
+                    response.usage,
+                )
+                raise RuntimeError(f"OpenAI returned null content (finish_reason={choice.finish_reason})")
             return content
         except Exception:
             logger.exception("OpenAI chat completion failed")
