@@ -1,53 +1,39 @@
-import type { Book } from "../types";
+import { BookCover, Badge } from './ui';
+import type { Book } from '../types';
 
 interface Props {
   book: Book;
   onSelect: (book: Book) => void;
-  onDelete: (bookId: number) => void;
-  disabled?: boolean;
+  idx: number;
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export function BookCard({ book, onSelect, onDelete, disabled }: Props) {
-  const isReady = book.status === "ready";
-
+export function BookCard({ book, onSelect, idx }: Props) {
+  const isReady = book.status === 'ready';
   return (
-    <div className="group flex items-center gap-4 px-4 py-3 border-b border-[#E4E4E4] last:border-b-0 hover:bg-[#F4F4F4] transition-colors">
-      <button
-        className={`flex-1 text-left text-sm text-[#111] ${
-          isReady ? "font-medium hover:underline cursor-pointer" : "font-normal opacity-50 cursor-default"
-        }`}
-        disabled={!isReady || disabled}
-        onClick={() => onSelect(book)}
-      >
-        {book.title}
-      </button>
-
-      <span
-        className={`shrink-0 text-xs px-2 py-0.5 rounded bg-[#F0F0F0] ${
-          isReady ? "text-[#111] font-medium" : "text-[#888] font-normal"
-        }`}
-      >
-        {book.status}
-      </span>
-
-      <span className="shrink-0 text-xs text-[#888]">{formatDate(book.uploaded_at)}</span>
-
-      <button
-        className="shrink-0 text-lg leading-none text-[#bbb] hover:text-[#111] opacity-0 group-hover:opacity-100 transition-opacity"
-        disabled={disabled}
-        onClick={() => onDelete(book.id)}
-        aria-label="Delete book"
-      >
-        ×
-      </button>
-    </div>
+    <button
+      onClick={() => isReady && onSelect(book)}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 16,
+        padding: '16px 18px', background: 'none', border: 'none',
+        borderBottom: '1px solid var(--border-s)', cursor: isReady ? 'pointer' : 'default',
+        textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.12s',
+      }}
+      onMouseEnter={e => { if (isReady) e.currentTarget.style.background = 'var(--bg)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+    >
+      <BookCover idx={idx} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{book.title}</span>
+          <Badge status={book.status} />
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-2)' }}>{book.author}</p>
+      </div>
+      {isReady && (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M5 11l4-4-4-4" />
+        </svg>
+      )}
+    </button>
   );
 }

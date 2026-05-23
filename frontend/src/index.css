@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg:       oklch(98.5% 0.008 78);
+  --bg-2:     oklch(96.2% 0.007 78);
+  --surface:  #ffffff;
+  --border:   oklch(91% 0.007 78);
+  --border-s: oklch(95% 0.004 78);
+  --text:     oklch(14% 0.012 78);
+  --text-2:   oklch(46% 0.012 78);
+  --text-3:   oklch(68% 0.008 78);
+  --amber:    oklch(72% 0.16 75);
+  --amber-bg: oklch(97.5% 0.022 75);
+  --blue:     oklch(60% 0.16 252);
+  --blue-bg:  oklch(97.5% 0.018 252);
+  --sage:     oklch(65% 0.12 158);
+  --sage-bg:  oklch(97.5% 0.018 158);
+  --rose:     oklch(58% 0.16 15);
+  --rose-bg:  oklch(97.5% 0.018 15);
+  --r:        9px;
+  --r-sm:     5px;
+  --r-lg:     14px;
+  --shadow:   0 2px 8px oklch(0% 0 0 / 0.07), 0 0 0 1px oklch(0% 0 0 / 0.03);
+  --shadow-lg:0 8px 32px oklch(0% 0 0 / 0.12), 0 0 0 1px oklch(0% 0 0 / 0.04);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root { height: 100vh; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(88% 0.006 78); border-radius: 3px; }
+
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes pulse   { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.fade-in { animation: fadeIn 0.3s ease-out; }
