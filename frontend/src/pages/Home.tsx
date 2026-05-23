@@ -1,50 +1,50 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { useBookStore } from "../store/useBookStore";
-import { BookCard } from "../components/BookCard";
-import { UploadZone } from "../components/UploadZone";
-import type { Book } from "../types";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useBookStore } from '../store/useBookStore';
+import { BookCard } from '../components/BookCard';
+import { UploadZone } from '../components/UploadZone';
+import { Logo } from '../components/ui';
+import type { Book } from '../types';
 
 export function Home() {
   const navigate = useNavigate();
-  const { books, isLoading, error, fetchBooks, uploadBook, deleteBook } = useBookStore();
+  const { books, fetchBooks, uploadBook } = useBookStore();
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    fetchBooks();
-  }, [fetchBooks]);
+  useEffect(() => { fetchBooks(); }, [fetchBooks]);
+
+  async function handleFile(file: File) {
+    setUploading(true);
+    await uploadBook(file);
+    setUploading(false);
+  }
 
   function handleSelect(book: Book) {
     navigate(`/books/${book.id}`);
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-xl font-semibold text-[#111] mb-8">Your Library</h1>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-out' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', height: 50, borderBottom: '1px solid var(--border)', background: 'var(--surface)', flexShrink: 0 }}>
+        <Logo size={22} />
+        <span style={{ fontSize: 13, fontWeight: 600 }}>RAG Study Studio</span>
+      </header>
 
-        <UploadZone onFile={uploadBook} disabled={isLoading} />
+      <div style={{ flex: 1, overflow: 'auto', maxWidth: 700, width: '100%', margin: '0 auto', padding: '30px 24px 80px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 24 }}>Your Library</h1>
 
-        {error && (
-          <p className="mt-4 text-sm text-[#111]">Error: {error}</p>
-        )}
-
-        {!isLoading && books.length === 0 && !error && (
-          <p className="mt-8 text-sm text-[#888]">No books yet. Upload a PDF to get started.</p>
-        )}
+        <UploadZone onFile={handleFile} uploading={uploading} />
 
         {books.length > 0 && (
-          <div className="mt-8 border border-[#E4E4E4] rounded overflow-hidden">
-            {books.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onSelect={handleSelect}
-                onDelete={deleteBook}
-                disabled={isLoading}
-              />
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+            {books.map((book, i) => (
+              <BookCard key={book.id} book={book} onSelect={handleSelect} idx={i} />
             ))}
           </div>
+        )}
+
+        {books.length === 0 && !uploading && (
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 16 }}>No books yet. Upload a PDF to get started.</p>
         )}
       </div>
     </div>

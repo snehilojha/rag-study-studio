@@ -1,206 +1,162 @@
-import { useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  Handle,
-  Position,
-  type Node,
-  type Edge,
-  type NodeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-
-import type { Topic, Connection } from "../types";
-
-// Layout constants
-const NODE_WIDTH = 172;
-const NODE_HEIGHT = 44;
-const NODE_GAP = 10;
-const COLUMN_WIDTH = 200;
-const COLUMN_GAP = 72;
-const HEADER_HEIGHT = 44;
-
-// Edge stroke styles per relationship type
-const EDGE_STYLE: Record<string, React.CSSProperties> = {
-  prerequisite: { stroke: "#999", strokeWidth: 1.5, strokeDasharray: "6 3" },
-  extension:    { stroke: "#999", strokeWidth: 1 },
-  application:  { stroke: "#777", strokeWidth: 2 },
-  contrast:     { stroke: "#999", strokeWidth: 1.5, strokeDasharray: "2 5" },
-};
-
-// ---------------------------------------------------------------------------
-// Custom node: topic
-// ---------------------------------------------------------------------------
-
-type TopicData = { label: string; color: string; topicId: number; bookId: number };
-
-function TopicNode({ data }: NodeProps) {
-  const navigate = useNavigate();
-  const d = data as TopicData;
-  return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: "none" }} />
-      <div
-        onClick={() => navigate(`/books/${d.bookId}/topics/${d.topicId}`)}
-        style={{ backgroundColor: d.color, width: NODE_WIDTH, height: NODE_HEIGHT, borderColor: "#D8D8D8" }}
-        className="flex items-center px-3 border rounded cursor-pointer hover:border-[#999] transition-colors"
-      >
-        <span className="text-xs text-[#111] truncate leading-tight">{d.label}</span>
-      </div>
-      <Handle type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: "none" }} />
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Custom node: chapter column header
-// ---------------------------------------------------------------------------
-
-type HeaderData = { label: string };
-
-function ChapterHeader({ data }: NodeProps) {
-  const d = data as HeaderData;
-  return (
-    <div
-      style={{ width: NODE_WIDTH, height: HEADER_HEIGHT }}
-      className="flex items-center justify-center"
-    >
-      <span className="text-xs font-semibold text-[#555] text-center truncate px-1 leading-tight">
-        {d.label}
-      </span>
-    </div>
-  );
-}
-
-const nodeTypes = { topic: TopicNode, chapterHeader: ChapterHeader };
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CHAP_COLORS, CHAP_BG, EDGE_COLORS } from './ui';
+import type { Topic, Connection } from '../types';
 
 interface Props {
   topics: Topic[];
   connections: Connection[];
   bookId: number;
+  activeTopic?: number | null;
 }
 
-interface Tooltip {
-  x: number;
-  y: number;
-  edgeType: string;
+function computePositions(topics: Topic[], w: number, h: number): Record<number, { x: number; y: number }> {
+  const byChapter = new Map<number, Topic[]>();
+  topics.forEach(t => {
+    if (!byChapter.has(t.chapter_order_index)) byChapter.set(t.chapter_order_index, []);
+    byChapter.get(t.chapter_order_index)!.push(t);
+  });
+  const cols = Array.from(byChapter.entries()).sort(([a], [b]) => a - b);
+  const n = cols.length;
+  const px = 80, py = 60;
+  const pos: Record<number, { x: number; y: number }> = {};
+  cols.forEach(([, colTopics], ci) => {
+    const x = n > 1 ? px + (ci / (n - 1)) * (w - px * 2) : w / 2;
+    const sorted = [...colTopics].sort((a, b) => a.order_index - b.order_index);
+    const m = sorted.length;
+    sorted.forEach((t, ti) => {
+      const y = m > 1 ? py + (ti / (m - 1)) * (h - py * 2) : h / 2;
+      // stagger even columns down slightly for visual variety
+      pos[t.id] = { x, y: y + (ci % 2 === 1 ? 20 : 0) };
+    });
+  });
+  return pos;
 }
 
-export function ConceptGraph({ topics, connections, bookId }: Props) {
-  const [tooltip, setTooltip] = useState<Tooltip | null>(null);
+export function ConceptGraph({ topics, connections, bookId, activeTopic }: Props) {
+  const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sz, setSz] = useState({ w: 0, h: 0 });
+  const [hov, setHov] = useState<number | null>(null);
 
-  // Group topics into chapter columns, sorted by chapter order
-  const columns = useMemo(() => {
-    const map = new Map<number, { title: string; topics: Topic[] }>();
-    for (const t of topics) {
-      if (!map.has(t.chapter_order_index)) {
-        map.set(t.chapter_order_index, { title: t.chapter_title, topics: [] });
-      }
-      map.get(t.chapter_order_index)!.topics.push(t);
-    }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([, v]) => v);
-  }, [topics]);
-
-  const { nodes, edges } = useMemo(() => {
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-    const n = columns.length;
-
-    columns.forEach((col, colIdx) => {
-      const x = colIdx * (COLUMN_WIDTH + COLUMN_GAP);
-      const hue = n > 1 ? Math.round((360 / n) * colIdx) : 200;
-      const color = `hsl(${hue}, 10%, 92%)`;
-
-      nodes.push({
-        id: `header-${colIdx}`,
-        type: "chapterHeader",
-        position: { x, y: 0 },
-        data: { label: col.title },
-        draggable: false,
-        selectable: false,
-        connectable: false,
-      });
-
-      const sorted = [...col.topics].sort((a, b) => a.order_index - b.order_index);
-      sorted.forEach((topic, tIdx) => {
-        nodes.push({
-          id: String(topic.id),
-          type: "topic",
-          position: { x, y: HEADER_HEIGHT + tIdx * (NODE_HEIGHT + NODE_GAP) },
-          data: { label: topic.title, color, topicId: topic.id, bookId },
-          draggable: false,
-          connectable: false,
-        });
-      });
-    });
-
-    connections.forEach((conn) => {
-      edges.push({
-        id: `e-${conn.id}`,
-        source: String(conn.source_topic_id),
-        target: String(conn.target_topic_id),
-        type: "smoothstep",
-        style: EDGE_STYLE[conn.edge_type] ?? { stroke: "#999", strokeWidth: 1 },
-        data: { edgeType: conn.edge_type },
-      });
-    });
-
-    return { nodes, edges };
-  }, [columns, connections, bookId]);
-
-  const onEdgeMouseEnter = useCallback((event: React.MouseEvent, edge: Edge) => {
-    setTooltip({ x: event.clientX, y: event.clientY, edgeType: String(edge.data?.edgeType ?? "") });
+  useEffect(() => {
+    const obs = new ResizeObserver(([e]) => setSz({ w: e.contentRect.width, h: e.contentRect.height }));
+    if (containerRef.current) obs.observe(containerRef.current);
+    return () => obs.disconnect();
   }, []);
 
-  const onEdgeMouseLeave = useCallback(() => setTooltip(null), []);
+  const pos = useMemo(() => sz.w > 0 ? computePositions(topics, sz.w, sz.h) : {}, [topics, sz]);
+
+  // Derive unique chapters for legend
+  const chapters = useMemo(() => {
+    const seen = new Map<number, { order: number; title: string }>();
+    topics.forEach(t => {
+      if (!seen.has(t.chapter_order_index)) seen.set(t.chapter_order_index, { order: t.chapter_order_index, title: t.chapter_title });
+    });
+    return Array.from(seen.values()).sort((a, b) => a.order - b.order);
+  }, [topics]);
 
   if (topics.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-sm text-[#888]">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--text-3)' }}>
         No topics found.
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        onEdgeMouseEnter={onEdgeMouseEnter}
-        onEdgeMouseLeave={onEdgeMouseLeave}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#E4E4E4" gap={24} size={1} />
-        <Controls showInteractive={false} />
-      </ReactFlow>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+      {sz.w > 0 && (
+        <svg width={sz.w} height={sz.h} style={{ position: 'absolute', inset: 0 }}>
+          <defs>
+            {Object.entries(EDGE_COLORS).map(([type, color]) => (
+              <marker key={type} id={`arr-${type}`} viewBox="0 0 10 10" refX="23" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0 0L10 5L0 10z" fill={color} opacity="0.75" />
+              </marker>
+            ))}
+          </defs>
 
-      {connections.length === 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-[#aaa] pointer-events-none whitespace-nowrap">
-          Connections appear as you browse topics
+          {/* Edges */}
+          {connections.map(c => {
+            const s = pos[c.source_topic_id], t = pos[c.target_topic_id];
+            if (!s || !t) return null;
+            const lit = hov != null && (c.source_topic_id === hov || c.target_topic_id === hov);
+            const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2 - 26;
+            const col = EDGE_COLORS[c.edge_type] ?? EDGE_COLORS.extension;
+            return (
+              <path key={c.id}
+                d={`M${s.x} ${s.y} Q${mx} ${my} ${t.x} ${t.y}`}
+                stroke={col} strokeWidth={lit ? 2.5 : 1.5}
+                strokeOpacity={lit ? 0.9 : 0.32} fill="none"
+                strokeDasharray={c.edge_type === 'contrast' ? '5,4' : 'none'}
+                markerEnd={`url(#arr-${c.edge_type})`}
+                style={{ transition: 'stroke-opacity 0.2s' }}
+              />
+            );
+          })}
+
+          {/* Nodes */}
+          {topics.map(t => {
+            const p = pos[t.id]; if (!p) return null;
+            const ci = (t.chapter_order_index || 1) - 1;
+            const col = CHAP_COLORS[ci % CHAP_COLORS.length];
+            const bg  = CHAP_BG[ci % CHAP_BG.length];
+            const isH = hov === t.id, isA = activeTopic === t.id;
+            const r = isA ? 22 : isH ? 20 : 17;
+            return (
+              <g key={t.id} transform={`translate(${p.x},${p.y})`}
+                onClick={() => navigate(`/books/${bookId}/topics/${t.id}`)}
+                onMouseEnter={() => setHov(t.id)}
+                onMouseLeave={() => setHov(null)}
+                style={{ cursor: 'pointer' }}>
+                {isA && <circle r={r + 8} fill={col} opacity={0.12} />}
+                <circle r={r} fill={isA ? col : bg} stroke={col} strokeWidth={isA ? 2.5 : isH ? 2 : 1.5} style={{ transition: 'all 0.18s ease' }} />
+                <text textAnchor="middle" dominantBaseline="central" fill={isA ? 'white' : col}
+                  style={{ fontSize: 10, fontWeight: 700, fontFamily: 'DM Sans, sans-serif', userSelect: 'none' }}>
+                  {t.title.charAt(0)}
+                </text>
+                <text y={r + 14} textAnchor="middle" fill={(isH || isA) ? 'var(--text)' : 'var(--text-2)'}
+                  style={{ fontSize: 10, fontFamily: 'DM Sans, sans-serif', fontWeight: (isH || isA) ? 600 : 400, userSelect: 'none', transition: 'fill 0.15s' }}>
+                  {t.title.length > 22 ? t.title.slice(0, 20) + '…' : t.title}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
+
+      {/* Relationship legend */}
+      <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 14px', boxShadow: 'var(--shadow)' }}>
+        <p style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Relationships</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {Object.entries(EDGE_COLORS).map(([type, col]) => (
+            <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ width: 20, height: 2, background: col, borderRadius: 1 }} />
+              <span style={{ fontSize: 11, color: 'var(--text-2)', textTransform: 'capitalize' }}>{type}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Chapter legend */}
+      {chapters.length > 0 && (
+        <div style={{ position: 'absolute', bottom: 16, right: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 14px', boxShadow: 'var(--shadow)' }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Chapters</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {chapters.map((ch, i) => (
+              <div key={ch.order} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: CHAP_COLORS[i % CHAP_COLORS.length], flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{ch.order}. {ch.title}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {tooltip && (
-        <div
-          className="fixed z-50 pointer-events-none text-xs bg-white border border-[#E4E4E4] px-2 py-1 rounded"
-          style={{ left: tooltip.x + 12, top: tooltip.y - 28 }}
-        >
-          {tooltip.edgeType}
+      {/* Hint when no connections yet */}
+      {connections.length === 0 && (
+        <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'var(--text-3)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+          Connections appear as you browse topics
         </div>
       )}
     </div>

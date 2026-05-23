@@ -1,4 +1,4 @@
-import type { TheoryContent } from "../types";
+import type { TheoryContent } from '../types';
 
 interface Props {
   content: TheoryContent;
@@ -6,51 +6,48 @@ interface Props {
 
 export function TheoryView({ content }: Props) {
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div style={{ maxWidth: 660, animation: 'fadeIn 0.2s ease-out' }}>
       {/* Explanation */}
-      <section>
-        <p className="text-sm text-[#111] leading-relaxed">{content.explanation}</p>
-      </section>
+      {content.explanation.split('\n\n').map((para, i, arr) => (
+        <p key={i} style={{ fontSize: 14.5, lineHeight: 1.8, color: 'var(--text)', marginBottom: i < arr.length - 1 ? 16 : 0 }}>
+          {para.trim()}
+        </p>
+      ))}
 
       {/* Key points */}
       {content.key_points.length > 0 && (
-        <section>
-          <h3 className="text-xs font-semibold text-[#555] uppercase tracking-wide mb-3">
-            Key Points
-          </h3>
-          <ul className="space-y-2 border-l-2 border-[#E4E4E4] pl-4">
-            {content.key_points.map((point, i) => (
-              <li key={i} className="text-sm text-[#111] leading-relaxed">
-                {point}
-              </li>
+        <div style={{ margin: '30px 0' }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Key Points</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {content.key_points.map((pt, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, background: 'var(--amber-bg)', border: '1px solid oklch(90% 0.04 75)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--amber)' }}>{i + 1}</span>
+                </div>
+                <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--text)' }}>{pt}</p>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </div>
       )}
 
       {/* Definitions */}
       {content.definitions.length > 0 && (
-        <section>
-          <h3 className="text-xs font-semibold text-[#555] uppercase tracking-wide mb-3">
-            Definitions
-          </h3>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-[#E4E4E4]">
-                <th className="text-left py-2 pr-4 text-xs font-semibold text-[#555] w-1/3">Term</th>
-                <th className="text-left py-2 text-xs font-semibold text-[#555]">Definition</th>
-              </tr>
-            </thead>
-            <tbody>
-              {content.definitions.map((def, i) => (
-                <tr key={i} className="border-b border-[#F0F0F0]">
-                  <td className="py-2 pr-4 text-xs font-medium text-[#111] align-top">{def.term}</td>
-                  <td className="py-2 text-xs text-[#333] leading-relaxed align-top">{def.definition}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <div>
+          <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Definitions</p>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+            {content.definitions.map((d, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '175px 1fr', borderBottom: i < content.definitions.length - 1 ? '1px solid var(--border-s)' : 'none' }}>
+                <div style={{ padding: '12px 14px', background: 'var(--bg)', borderRight: '1px solid var(--border-s)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'DM Mono, monospace', color: 'var(--text)' }}>{d.term}</span>
+                </div>
+                <div style={{ padding: '12px 14px' }}>
+                  <p style={{ fontSize: 13, lineHeight: 1.62, color: 'var(--text-2)' }}>{d.definition}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

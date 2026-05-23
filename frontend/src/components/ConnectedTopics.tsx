@@ -1,12 +1,13 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useStudyStore } from "../store/useStudyStore";
+import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStudyStore } from '../store/useStudyStore';
+import { CHAP_COLORS } from './ui';
 
-const BADGE_LABEL: Record<string, string> = {
-  prerequisite: "prerequisite",
-  extension: "extension",
-  application: "application",
-  contrast: "contrast",
+const BADGE_STYLE: Record<string, { color: string; bg: string }> = {
+  prerequisite: { color: 'oklch(62% 0.12 40)', bg: 'oklch(97.5% 0.018 40)' },
+  extension:    { color: 'var(--blue)',  bg: 'var(--blue-bg)' },
+  application:  { color: 'var(--sage)',  bg: 'var(--sage-bg)' },
+  contrast:     { color: 'var(--rose)',  bg: 'var(--rose-bg)' },
 };
 
 interface Props {
@@ -23,45 +24,42 @@ export function ConnectedTopics({ topicId, bookId }: Props) {
   }, [topicId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const connections = topicConnections[topicId] ?? [];
+  const valid = useMemo(() => connections.filter(c => c.valid), [connections]);
 
   return (
-    <aside className="w-[240px] shrink-0 border-l border-[#E4E4E4] pl-6 space-y-3">
-      <h3 className="text-xs font-semibold text-[#555] uppercase tracking-wide">
-        Connected Topics
-      </h3>
+    <div>
+      <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Connected Topics</p>
 
-      {connectionsLoading && connections.length === 0 && (
-        <p className="text-xs text-[#aaa]">Loading…</p>
+      {connectionsLoading && valid.length === 0 && (
+        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</p>
+      )}
+      {!connectionsLoading && valid.length === 0 && (
+        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No connections for this topic.</p>
       )}
 
-      {!connectionsLoading && connections.length === 0 && (
-        <p className="text-xs text-[#aaa]">No connections found for this topic.</p>
-      )}
-
-      <ul className="space-y-3">
-        {connections
-          .filter((c) => c.valid)
-          .map((conn, i) => (
-            <li key={i}>
-              <button
-                onClick={() => navigate(`/books/${bookId}/topics/${conn.target_topic_id}`)}
-                className="w-full text-left group space-y-1"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-medium text-[#111] group-hover:underline">
-                    → {conn.target_topic}
-                  </span>
-                  <span className="text-xs px-1.5 py-0.5 bg-[#F0F0F0] text-[#555] rounded">
-                    {BADGE_LABEL[conn.relationship] ?? conn.relationship}
-                  </span>
-                </div>
-                {conn.reason && (
-                  <p className="text-xs text-[#888] leading-relaxed">{conn.reason}</p>
-                )}
-              </button>
-            </li>
-          ))}
-      </ul>
-    </aside>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {valid.map((c, i) => {
+          const bd = BADGE_STYLE[c.relationship] ?? BADGE_STYLE.extension;
+          // use target topic id for color — pick a color index based on topic id
+          const ci = (c.target_topic_id % CHAP_COLORS.length);
+          return (
+            <button key={i} onClick={() => navigate(`/books/${bookId}/topics/${c.target_topic_id}`)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAP_COLORS[ci], flexShrink: 0, marginTop: 5 }} />
+                <span style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.4, color: 'var(--text)' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                  {c.target_topic}
+                </span>
+              </div>
+              <span style={{ fontSize: 10.5, fontWeight: 500, color: bd.color, background: bd.bg, padding: '2px 7px', borderRadius: 4, textTransform: 'capitalize', marginLeft: 12, display: 'inline-block' }}>
+                {c.relationship}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

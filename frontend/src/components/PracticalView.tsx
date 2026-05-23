@@ -1,81 +1,64 @@
-import { useState } from "react";
-import type { PracticalContent } from "../types";
+import { useState } from 'react';
+import type { PracticalContent } from '../types';
 
 interface Props {
   content: PracticalContent;
 }
 
 export function PracticalView({ content }: Props) {
-  const [openExamples, setOpenExamples] = useState<Set<number>>(new Set());
-
-  function toggle(i: number) {
-    setOpenExamples((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
+  const [open, setOpen] = useState<Set<number>>(new Set([0]));
+  function tog(i: number) {
+    setOpen(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; });
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      {/* Overview */}
-      <section>
-        <p className="text-sm text-[#111] leading-relaxed">{content.overview}</p>
-      </section>
+    <div style={{ maxWidth: 660, animation: 'fadeIn 0.2s ease-out' }}>
+      <p style={{ fontSize: 14.5, lineHeight: 1.8, color: 'var(--text)', marginBottom: 30 }}>{content.overview}</p>
 
-      {/* Examples accordion */}
       {content.examples.length > 0 && (
-        <section>
-          <h3 className="text-xs font-semibold text-[#555] uppercase tracking-wide mb-3">
-            Examples
-          </h3>
-          <div className="border border-[#E4E4E4] rounded divide-y divide-[#E4E4E4]">
-            {content.examples.map((ex, i) => {
-              const isOpen = openExamples.has(i);
-              return (
-                <div key={i}>
-                  <button
-                    onClick={() => toggle(i)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#111] font-medium text-left hover:bg-[#F4F4F4] transition-colors"
-                  >
-                    <span>{ex.title}</span>
-                    <span className="ml-2 shrink-0 text-[#aaa] font-normal">{isOpen ? "−" : "+"}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 pb-4 space-y-3">
-                      {ex.description && (
-                        <p className="text-sm text-[#333] leading-relaxed">{ex.description}</p>
-                      )}
-                      {ex.steps.length > 0 && (
-                        <ol className="space-y-1.5 list-decimal list-inside">
-                          {ex.steps.map((step, si) => (
-                            <li key={si} className="text-sm text-[#333] leading-relaxed">
-                              {step}
-                            </li>
-                          ))}
-                        </ol>
-                      )}
+        <div style={{ marginBottom: 26 }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Examples</p>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+            {content.examples.map((ex, i) => (
+              <div key={i} style={{ borderBottom: i < content.examples.length - 1 ? '1px solid var(--border-s)' : 'none' }}>
+                <button onClick={() => tog(i)}
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>{ex.title}</span>
+                  <span style={{ fontSize: 20, color: 'var(--text-3)', fontWeight: 300, lineHeight: 1, flexShrink: 0 }}>{open.has(i) ? '−' : '+'}</span>
+                </button>
+                {open.has(i) && (
+                  <div style={{ padding: '0 15px 15px', animation: 'fadeIn 0.18s ease-out' }}>
+                    {ex.description && <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65, marginBottom: 13 }}>{ex.description}</p>}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {ex.steps.map((s, si) => (
+                        <div key={si} style={{ display: 'flex', gap: 12 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', fontFamily: 'DM Mono, monospace', minWidth: 22, paddingTop: 2, flexShrink: 0 }}>{String(si + 1).padStart(2, '0')}</span>
+                          <p style={{ fontSize: 13, lineHeight: 1.62, color: 'var(--text)' }}>{s}</p>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* Tips */}
       {content.tips.length > 0 && (
-        <section>
-          <h3 className="text-xs font-semibold text-[#555] uppercase tracking-wide mb-3">Tips</h3>
-          <ul className="space-y-2 border-l-2 border-[#E4E4E4] pl-4">
+        <div>
+          <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Tips</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {content.tips.map((tip, i) => (
-              <li key={i} className="text-sm text-[#111] leading-relaxed">
-                {tip}
-              </li>
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '10px 13px', background: 'var(--blue-bg)', borderRadius: 'var(--r-sm)', border: '1px solid oklch(91% 0.018 252)' }}>
+                <span style={{ color: 'var(--blue)', fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</span>
+                <p style={{ fontSize: 13, lineHeight: 1.62, color: 'var(--text)' }}>{tip}</p>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </div>
       )}
     </div>
   );
