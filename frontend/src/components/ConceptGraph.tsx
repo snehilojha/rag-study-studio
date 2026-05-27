@@ -56,17 +56,14 @@ export function ConceptGraph({ topics, connections, bookId, activeTopic }: Props
     return Array.from(seen.values()).sort((a, b) => a.order - b.order);
   }, [topics]);
 
-  if (topics.length === 0) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--text-3)' }}>
-        No topics found.
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      {sz.w > 0 && (
+      {topics.length === 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: 'var(--text-3)' }}>
+          No topics found.
+        </div>
+      )}
+      {topics.length > 0 && sz.w > 0 && (
         <svg width={sz.w} height={sz.h} style={{ position: 'absolute', inset: 0 }}>
           <defs>
             {Object.entries(EDGE_COLORS).map(([type, color]) => (

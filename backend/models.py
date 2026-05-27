@@ -34,7 +34,7 @@ class Chapter(SQLModel, table=True):
     summary: Optional[str] = Field(default=None)
 
     book: Optional[Book] = Relationship(back_populates="chapters")
-    topics: List["Topic"] = Relationship(back_populates="chapter")
+    topics: List["Topic"] = Relationship(back_populates="chapter", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Topic(SQLModel, table=True):
     """Represents a topic extracted from a chapter."""
@@ -47,9 +47,9 @@ class Topic(SQLModel, table=True):
     summary: Optional[str] = Field(default=None)
 
     chapter: Optional[Chapter] = Relationship(back_populates="topics")
-    quiz_questions: List["QuizQuestion"] = Relationship(back_populates="topic")
-    outgoing_edges: List["ConceptEdge"] = Relationship(back_populates="source_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.source_topic_id]"})
-    incoming_edges: List["ConceptEdge"] = Relationship(back_populates="target_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.target_topic_id]"})
+    quiz_questions: List["QuizQuestion"] = Relationship(back_populates="topic", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    outgoing_edges: List["ConceptEdge"] = Relationship(back_populates="source_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.source_topic_id]", "cascade": "all, delete-orphan"})
+    incoming_edges: List["ConceptEdge"] = Relationship(back_populates="target_topic", sa_relationship_kwargs={"foreign_keys": "[ConceptEdge.target_topic_id]", "cascade": "all, delete"})
 
 class QuizQuestionType(str, Enum):
     """Enumeration for quiz question types."""
@@ -69,7 +69,7 @@ class QuizQuestion(SQLModel, table=True):
     explanation: Optional[str] = Field(default=None) # explanation for the correct answer
 
     topic: Optional[Topic] = Relationship(back_populates='quiz_questions')
-    attempts: List["QuizAttempt"] = Relationship(back_populates="question")
+    attempts: List["QuizAttempt"] = Relationship(back_populates="question", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class QuizAttempt(SQLModel, table=True):
     """Represents a user's attempt at a quiz question."""

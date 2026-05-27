@@ -8,7 +8,7 @@ import type { Book } from '../types';
 
 export function Home() {
   const navigate = useNavigate();
-  const { books, fetchBooks, uploadBook } = useBookStore();
+  const { books, fetchBooks, uploadBook, deleteBook } = useBookStore();
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
@@ -21,6 +21,12 @@ export function Home() {
 
   function handleSelect(book: Book) {
     navigate(`/books/${book.id}`);
+  }
+
+  function handleDelete(book: Book) {
+    if (window.confirm(`Delete "${book.title}"? This cannot be undone.`)) {
+      deleteBook(book.id);
+    }
   }
 
   return (
@@ -38,7 +44,7 @@ export function Home() {
         {books.length > 0 && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
             {books.map((book, i) => (
-              <BookCard key={book.id} book={book} onSelect={handleSelect} idx={i} />
+              <BookCard key={book.id} book={book} onSelect={handleSelect} onDelete={handleDelete} idx={i} />
             ))}
           </div>
         )}
