@@ -1,0 +1,82 @@
+[
+    {
+        "question": "How does gradient descent minimize a function?",
+        "keywords": ["gradient", "minimize", "step"]
+    },
+    {
+        "question": "What is Overfitting?", 
+        "keywords": ["generalizes","noise","specific"]
+    },
+    {
+        "question": "What is statistical hypothesis testing?", 
+        "keywords": ["hypothesis","null","assumptions"]
+    },
+    {
+        "question": "explain the k-nearest neighbors?", 
+        "keywords": ["nearest","neighbors","distance"]
+    },
+    {
+        "question": "What is naive bayes?", 
+        "keywords": ["bayes","conditional","naive"]
+    },
+    {
+        "question": "Define Decision trees and their use case?", 
+        "keywords": ["decision","tree","splitting"]
+    },
+    {
+        "question": "How to create desicion tree?", 
+        "keywords": ["branching","node","leaf"]
+    },
+    {
+        "question": "What is Random forests?", 
+        "keywords": ["bootstrap","bagging","ensemble"]
+    },
+    {
+        "question": "Explain Neural network?", 
+        "keywords": ["artificial","neural","neurons"]
+    },
+    {
+        "question": "Define clustering?", 
+        "keywords": ["unsupervised","clusters","k-means"]
+    },
+    {
+        "question": "Define Natural language processing?", 
+        "keywords": ["grammar","nlp","processing"]
+    },
+    {
+        "question": "Define latent dirichlet analysis?", 
+        "keywords": ["topic","modeling","probabilistic"]
+    },
+    {
+        "question": "what is network analysis?", 
+        "keywords": ["graph","nodes","edges"]
+    },
+    {
+        "question": "Define degree centrality?", 
+        "keywords": ["nodes","connections","degree"]
+    },
+    {
+        "question": "Define betweenness centrality?", 
+        "keywords": ["paths","shortest","critical"]
+    },
+    {
+        "question": "Define eigenvector centrality?", 
+        "keywords": ["eigenvector","connections","matrix"]
+    },
+    {
+        "question": "What are recommended ways to avoid overfitting in decision trees?", 
+        "keywords": ["pruning","depth","validation"]
+    },
+    {
+        "question": "what is linear regression?", 
+        "keywords": ["linear","regression","coefficient"]
+    },
+    {
+        "question": "Define collaborative filtering?", 
+        "keywords": ["users","items","similarities"]
+    },
+    {
+        "question": "Define logistic regression?", 
+        "keywords": ["logistic","regression","sigmoid"]
+    }
+]
