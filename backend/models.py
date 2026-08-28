@@ -20,6 +20,10 @@ class Book(SQLModel, table=True):
     file_path: str
     uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: BookStatus = Field(default=BookStatus.pending)
+    # How the chapter/topic structure was arrived at: "toc" when read from the
+    # PDF's table of contents, "flat" when the TOC was unusable and the book is
+    # presented as a single span. The UI says which.
+    structure_source: str = Field(default="toc")
 
     chapters: List["Chapter"] = Relationship(back_populates="book",sa_relationship_kwargs = {"cascade": "all, delete-orphan"},)
 

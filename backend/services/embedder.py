@@ -64,6 +64,33 @@ def embed_query(text: str) -> List[float]:
     return results[0]
 
 
+@lru_cache(maxsize=1)
+def get_tokenizer():
+    """Return a *fast* tokenizer for the embedding model.
+
+    The chunker counts tokens with this, so a configured chunk size is the size
+    the model actually sees rather than a proxy for it. It must be the fast
+    variant: the chunker needs `return_offsets_mapping` to slice the book's
+    original text. Decoding token ids back to text instead would store the
+    tokenizer's reconstruction — lowercased, with punctuation respaced — which
+    is what then gets shown in citations and fed to the LLM.
+    """
+    from transformers import AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDING_MODEL, use_fast=True)
+    if not tokenizer.is_fast:
+        raise RuntimeError(
+            f"{settings.EMBEDDING_MODEL} has no fast tokenizer; the chunker needs "
+            "offset mapping to preserve the source text."
+        )
+    return tokenizer
+
+
+def get_max_seq_length() -> int:
+    """Tokens the model accepts per input, before special tokens."""
+    return _load_model().max_seq_length
+
+
 def get_embedding_dim() -> int:
     """Return the output dimension of the loaded model."""
     return _load_model().get_embedding_dimension()

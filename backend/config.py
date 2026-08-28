@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     # Embeddings
     EMBEDDING_MODEL: str = "snowflake/snowflake-arctic-embed-l"
 
-    # Chunking
+    # Chunking — counted in TOKENS via the embedding model's tokenizer.
+    # Must stay at or below the model's max_seq_length minus 2 special tokens
+    # (512 - 2 = 510 for snowflake-arctic-embed-l).
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
 

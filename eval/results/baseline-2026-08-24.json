@@ -1,0 +1,480 @@
+{
+  "run_at": "2026-08-28T17:36:54+00:00",
+  "config": {
+    "embedding_model": "Snowflake/snowflake-arctic-embed-l",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "chunk_size": 500,
+    "chunk_overlap": 50,
+    "top_k": 5,
+    "retrieve_k": 12,
+    "book_id_filter": null,
+    "match_threshold": 0.67,
+    "min_root_len": 5,
+    "collection": "book_chunks",
+    "points": 305,
+    "corpus": [
+      {
+        "id": 1,
+        "title": "Data Science from Scratch by Joel Grus",
+        "status": "ready"
+      }
+    ]
+  },
+  "metrics": {
+    "retrieval": {
+      "p1": 0.7,
+      "p3": 0.75,
+      "p5": 0.85,
+      "mrr": 0.7474999999999999
+    },
+    "reranked": {
+      "p1": 0.8,
+      "p3": 0.85,
+      "p5": 0.9,
+      "mrr": 0.8375
+    }
+  },
+  "questions": [
+    {
+      "question": "How does gradient descent minimize a function?",
+      "keywords": [
+        "gradient",
+        "minimize",
+        "step"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "What is Overfitting?",
+      "keywords": [
+        "generalizes",
+        "noise",
+        "specific"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "What is statistical hypothesis testing?",
+      "keywords": [
+        "hypothesis",
+        "null",
+        "assumptions"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "explain the k-nearest neighbors?",
+      "keywords": [
+        "nearest",
+        "neighbors",
+        "distance"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "What is naive bayes?",
+      "keywords": [
+        "bayes",
+        "conditional",
+        "naive"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 0.5
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define Decision trees and their use case?",
+      "keywords": [
+        "decision",
+        "tree",
+        "splitting"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "How to create desicion tree?",
+      "keywords": [
+        "branching",
+        "node",
+        "leaf"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 1.0,
+          "mrr": 0.2
+        },
+        "reranked": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 1.0,
+          "mrr": 0.25
+        }
+      }
+    },
+    {
+      "question": "What is Random forests?",
+      "keywords": [
+        "bootstrap",
+        "bagging",
+        "ensemble"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 0.0,
+          "mrr": 0.0
+        },
+        "reranked": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 0.0,
+          "mrr": 0.0
+        }
+      }
+    },
+    {
+      "question": "Explain Neural network?",
+      "keywords": [
+        "artificial",
+        "neural",
+        "neurons"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define clustering?",
+      "keywords": [
+        "unsupervised",
+        "clusters",
+        "k-means"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define Natural language processing?",
+      "keywords": [
+        "grammar",
+        "nlp",
+        "processing"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define latent dirichlet analysis?",
+      "keywords": [
+        "topic",
+        "modeling",
+        "probabilistic"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 1.0,
+          "mrr": 0.25
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "what is network analysis?",
+      "keywords": [
+        "graph",
+        "nodes",
+        "edges"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define degree centrality?",
+      "keywords": [
+        "nodes",
+        "connections",
+        "degree"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define betweenness centrality?",
+      "keywords": [
+        "paths",
+        "shortest",
+        "critical"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 0.0,
+          "mrr": 0.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define eigenvector centrality?",
+      "keywords": [
+        "eigenvector",
+        "connections",
+        "matrix"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "What are recommended ways to avoid overfitting in decision trees?",
+      "keywords": [
+        "pruning",
+        "depth",
+        "validation"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 0.0,
+          "mrr": 0.0
+        },
+        "reranked": {
+          "p1": 0.0,
+          "p3": 0.0,
+          "p5": 0.0,
+          "mrr": 0.0
+        }
+      }
+    },
+    {
+      "question": "what is linear regression?",
+      "keywords": [
+        "linear",
+        "regression",
+        "coefficient"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    },
+    {
+      "question": "Define collaborative filtering?",
+      "keywords": [
+        "users",
+        "items",
+        "similarities"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 0.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 0.5
+        }
+      }
+    },
+    {
+      "question": "Define logistic regression?",
+      "keywords": [
+        "logistic",
+        "regression",
+        "sigmoid"
+      ],
+      "scores": {
+        "retrieval": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        },
+        "reranked": {
+          "p1": 1.0,
+          "p3": 1.0,
+          "p5": 1.0,
+          "mrr": 1.0
+        }
+      }
+    }
+  ],
+  "n": 20
+}

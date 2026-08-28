@@ -36,18 +36,74 @@ Two known caveats on the historical numbers:
 2. The overlap experiment (Experiment 2) ran with a broken monkey-patch that was fixed
    afterward without re-running the sweep. Treat those conclusions as unverified.
 
-## Rewiring status
+## The harness
 
-`reference/evaluate_faiss.py` is the original harness. The metric logic (P@K, MRR,
-stem-truncated keyword matching) transfers as-is; the retrieval call does not.
+`evaluate.py` scores retrieval against this stack. Run it from the repo root:
 
-To port it, replace the FAISS `retrieve()` call with `services.vector_store.search_chunks`
-and drop the index-loading path — Qdrant handles persistence and per-book filtering.
+```
+python eval/evaluate.py --questions eval/questions.json --debug
+python eval/evaluate.py --output eval/results/baseline.json
+python eval/evaluate.py --compare eval/results/baseline.json
+```
 
-`reference/ingest_faiss.py` is kept for a different reason: its `chunk_text` builds a
-global token stream with a parallel token-to-page map, so every chunk records the page
-it actually started on. That is the fix for the fabricated page numbers described in
-`ROADMAP.md` (Tier 0, item 2).
+Requires Qdrant reachable at `QDRANT_URL` and at least one book with
+`status=ready`. It scores retrieval only and never calls an LLM, so it runs even
+while the generation path is broken.
 
-`reference/retriever_faiss.py` documents the asymmetric query-prefix requirement that
-this project's embedder currently does not apply (ROADMAP.md, Tier 0).
+Two variants are measured on every run:
+
+| Variant | Path | Answers |
+|---|---|---|
+| `retrieval` | `search_chunks(top_k=5)` | What does the vector store find on its own? |
+| `reranked` | `search_chunks(top_k=12)` then `rerank(5)` | What does the app actually show? |
+
+The gap between them is the cross-encoder's contribution. The archived harness
+had no reranker and could not measure it.
+
+Queries embed through `services.embedder`, so changes there — the missing
+asymmetric query prefix, for one — show up in the numbers without touching this
+file.
+
+## Comparing runs honestly
+
+Every result file records the config that produced it: embedding model, chunk
+size and overlap, `top_k`, the book filter, the relevance thresholds, and the
+corpus. `--compare` checks that config against the current run and prints a
+loud drift warning when they differ, because a delta across two different
+systems is not attributable to anything.
+
+Pointed at a file in `results/` that predates this harness, `--compare` refuses
+outright.
+
+## What was actually reused
+
+Roughly 60 of the 229 lines in `reference/evaluate_faiss.py`:
+
+- the metric definitions — P@1/3/5 and MRR by first relevant chunk
+- `MATCH_THRESHOLD = 0.67` and `MIN_ROOT_LEN = 5`, and the reasoning behind
+  them: strict AND-matching produced false negatives on correct retrievals
+- keyword presence as the relevance signal, which is what makes the harness
+  cheap enough to run on every change
+
+Everything else was FAISS index loading, CLI plumbing, and per-book indices —
+none of which map onto a single Qdrant collection with a payload filter.
+
+One function was deliberately **not** ported. `print_comparison` hardcoded
+`chunk_size == 384` and printed a delta against `all-mpnet-base-v2` numbers from
+a different corpus. It produced a rigorous-looking comparison that meant
+nothing. `--compare` is its replacement, and it fails loudly where the original
+failed silently.
+
+The real asset here was never the code — it was `questions.json`.
+
+## Reference files
+
+`reference/` stays for two things beyond the metric logic:
+
+- `ingest_faiss.py` builds a global token stream with a parallel token-to-page
+  map, so every chunk records the page it actually started on. That is the fix
+  for the fabricated page numbers in `services/chunker.py`.
+- `retriever_faiss.py` documents the asymmetric query-prefix requirement this
+  project does not currently apply.
+
+Neither runs against this repo.

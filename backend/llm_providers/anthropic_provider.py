@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class AnthropicProvider(LLMClient):
     """Anthropic provider."""
-    def __init__(self, api_key: str, model: str, base_url: str = "https://api.anthropic.com/v1", max_tokens: int = 1024) -> None:
+    def __init__(self, api_key: str, model: str, base_url: str = "https://api.anthropic.com/v1", max_tokens: int = 4096) -> None:
         """Initialize with Anthropic API key and model name."""
         if not api_key:
             raise ValueError("Anthropic API key is required")

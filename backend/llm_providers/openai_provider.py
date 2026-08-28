@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class OpenAIProvider(LLMClient):
     """LLM provider backed by the OpenAI API (or any OpenAI-compatible endpoint)."""
 
-    def __init__(self, api_key: str, model: str, base_url: str = "", max_tokens: int = 1024) -> None:
+    def __init__(self, api_key: str, model: str, base_url: str = "", max_tokens: int = 4096) -> None:
         """Initialize with OpenAI API key and model name."""
         if not api_key:
             raise ValueError("OpenAI API key is required")

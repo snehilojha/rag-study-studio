@@ -10,12 +10,9 @@ from sqlmodel import Session, select
 
 from config import settings
 from database import get_session
-from models import Book, BookStatus, Chapter
-from services.pdf_extractor import extract_chapters, extract_text_for_pages
-from services.topic_service import extract_and_save_topics
-from services.chunker import chunk_chapter
-from services.embedder import embed_texts, unload_model
-from services.vector_store import create_collection, upsert_chunks, delete_book_chunks
+from models import Book, BookStatus
+from services.ingest_service import ingest_book
+from services.vector_store import delete_book_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +38,14 @@ def upload_book(
     session: Session = Depends(get_session),
 ) -> Book:
     """
-    Upload a PDF book and run the full ingestion pipeline:
-      1. Save PDF to disk
-      2. Create Book record (status=processing)
-      3. Extract chapters -> Chapter records
-      4. Extract topics -> Topic records
-      5. Chunk each chapter
-      6. Embed chunks
-      7. Upsert to Qdrant
-      8. Mark Book status=ready
+    Upload a PDF book and run the ingestion pipeline:
+      1. Create the Book row, then save the PDF under its id
+      2. Read chapters and topics from the PDF's table of contents
+      3. Chunk each chapter into token windows, embed, upsert to Qdrant
+      4. Mark the book ready
 
-    Blocking. Returns the Book record when done.
+    Still blocking. No longer makes any LLM calls, so a book ingests in
+    seconds rather than minutes.
     """
     if not file.filename or not file.filename.endswith(".pdf"):
         raise HTTPException(
@@ -59,7 +53,6 @@ def upload_book(
             detail="Only PDF files are accepted.",
         )
 
-    # 1. Create Book record with placeholder path so we have an id
     book = Book(
         title=Path(file.filename).stem,
         author="",
@@ -70,95 +63,19 @@ def upload_book(
     session.commit()
     session.refresh(book)
 
+    file_path = _save_upload(file, book.id)
+    book.file_path = str(file_path)
+    session.add(book)
+    session.commit()
+
     try:
-        # 2. Save file to disk now that we have the id
-        file_path = _save_upload(file, book.id)
-        book.file_path = str(file_path)
-        session.add(book)
-        session.commit()
-
-        # 3. Extract chapters from PDF
-        chapter_data_list = extract_chapters(str(file_path))
-        if not chapter_data_list:
-            raise ValueError("No chapters could be extracted from the PDF.")
-
-        chapters: list[Chapter] = []
-        for chapter_data in chapter_data_list:
-            chapter = Chapter(
-                book_id=book.id,
-                title=chapter_data.title,
-                order_index=chapter_data.order_index,
-                start_page=chapter_data.start_page,
-                end_page=chapter_data.end_page,
-            )
-            session.add(chapter)
-            chapters.append(chapter)
-
-        session.commit()
-        for chapter in chapters:
-            session.refresh(chapter)
-
-        # 4. Extract topics
-        chapter_texts = {}
-        for chapter in chapters:
-            chapter_text = extract_text_for_pages(
-            str(file_path),
-            chapter.start_page,
-            chapter.end_page,
-            )
-            chapter_texts[chapter.id] = chapter_text
-            extract_and_save_topics(chapter, session, chapter_text)
-        # 5-7. Chunk, embed, upsert per chapter
-        create_collection()  # no-op if already exists
-
-        for chapter, chapter_data in zip(chapters, chapter_data_list):
-            chapter_text = chapter_texts[chapter.id]
-            chunks = chunk_chapter(
-                text=chapter_text,
-                chapter_id=chapter.id,
-                book_id=book.id,
-                start_page=chapter_data.start_page,
-            )
-            if not chunks:
-                continue
-
-            texts = [c.text for c in chunks]
-            page_numbers = [c.page_number for c in chunks]
-            chunk_indices = list(range(len(chunks)))
-
-            vectors = embed_texts(texts)
-
-            upsert_chunks(
-                book_id=book.id,
-                chapter_id=chapter.id,
-                texts=texts,
-                vectors=vectors,
-                page_numbers=page_numbers,
-                chunk_indices=chunk_indices,
-            )
-
-        # 8. Mark ready
-        book.status = BookStatus.ready
-        session.add(book)
-        session.commit()
-        session.refresh(book)
-
-        logger.info("Book id=%d ingestion complete.", book.id)
-
+        return ingest_book(book, session)
     except Exception as exc:
-        logger.exception("Ingestion failed for book id=%d: %s", book.id, exc)
-        book.status = BookStatus.failed
-        session.add(book)
-        session.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ingestion failed: {exc}",
         )
 
-    finally:
-        unload_model()  # free embedding model from RAM after job
-
-    return book
 
 # GET /books — list all books
 
@@ -193,12 +110,19 @@ def delete_book(book_id: int, session: Session = Depends(get_session)) -> None:
     if not book:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found.")
 
-    # Remove vectors from Qdrant first
+    # Vectors first. If this fails the delete is abandoned entirely: dropping
+    # the row anyway is what leaves orphaned vectors in the collection, and
+    # since SQLite reuses primary keys a later book inherits them and answers
+    # questions from a book that is no longer in the library.
     try:
         delete_book_chunks(book_id)
     except Exception as exc:
-        logger.warning("Qdrant deletion failed for book_id=%d: %s", book_id, exc)
-        # Don't block DB deletion if Qdrant fails — log and continue
+        logger.exception("Qdrant deletion failed for book_id=%d — aborting delete", book_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Could not remove this book's vectors, so nothing was deleted. "
+                   f"Check the vector store and retry. ({exc})",
+        )
 
     # Remove PDF from disk
     file_path = Path(book.file_path)
